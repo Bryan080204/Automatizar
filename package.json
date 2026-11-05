@@ -1,0 +1,25 @@
+{
+  "name": "organizador-inventario-nissan",
+  "version": "1.0.0",
+  "description": "Sistema web para organizar inventarios de vehículos Nissan desde archivos Excel.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "ejemplo": "node scripts/generar-ejemplo.js"
+  },
+  "keywords": [
+    "nissan",
+    "inventario",
+    "excel",
+    "nodejs"
+  ],
+  "author": "Juan Antonio & Brayan Santiago",
+  "license": "ISC",
+  "dependencies": {
+    "exceljs": "^4.4.0",
+    "express": "^5.3.0",
+    "multer": "^2.5.0",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
+  }
+}
