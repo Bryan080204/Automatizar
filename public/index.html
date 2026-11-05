@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Organiza automáticamente inventarios de vehículos Nissan desde archivos Excel.">
+  <title>Organizador de Inventarios Nissan</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="page">
+    <header class="site-header">
+      <a class="brand" href="/" aria-label="Inicio">
+        <span class="brand-mark">N</span>
+        <span class="brand-text">
+          <strong>NISSAN</strong>
+          <small>Inventario</small>
+        </span>
+      </a>
+      <span class="header-tag">Organizador inteligente de Excel</span>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="hero-content">
+          <span class="eyebrow"><span class="eyebrow-dot"></span>Control de inventario</span>
+          <h1>Ordena tu inventario <span>Nissan</span> en segundos.</h1>
+          <p>
+            Sube tu archivo de Excel y el sistema detectará, clasificará y agrupará los vehículos
+            por tipo, sucursal y procedencia. Sin alterar tus datos originales.
+          </p>
+          <div class="hero-tags">
+            <span>Nacionales</span>
+            <span>Importados</span>
+            <span>Internacionales</span>
+          </div>
+        </div>
+
+        <div class="hero-visual" aria-hidden="true">
+          <div class="visual-card">
+            <div class="visual-line"><span></span><span></span><span></span></div>
+            <div class="visual-row">
+              <span class="visual-dot red"></span>
+              <span class="visual-bar long"></span>
+              <span class="visual-bar short"></span>
+            </div>
+            <div class="visual-row">
+              <span class="visual-dot gray"></span>
+              <span class="visual-bar medium"></span>
+              <span class="visual-bar tiny"></span>
+            </div>
+            <div class="visual-row">
+              <span class="visual-dot gray"></span>
+              <span class="visual-bar long"></span>
+              <span class="visual-bar medium"></span>
+            </div>
+            <div class="visual-row">
+              <span class="visual-dot gray"></span>
+              <span class="visual-bar medium"></span>
+              <span class="visual-bar short"></span>
+            </div>
+            <div class="visual-footer">
+              <span class="visual-chip">TIPO</span>
+              <span class="visual-chip">SUCURSAL</span>
+              <span class="visual-chip">PROCEDENCIA</span>
+            </div>
+          </div>
+          <div class="visual-badge">XLSX <span>→</span> ORDENADO</div>
+        </div>
+      </section>
+
+      <section class="workspace" id="workspace">
+        <div class="panel upload-panel" id="uploadSection">
+          <div class="panel-head">
+            <div>
+              <span class="step-label">Paso 01</span>
+              <h2>Sube tu archivo Excel</h2>
+            </div>
+            <span class="format-badge">.xlsx / .xls</span>
+          </div>
+
+          <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Seleccionar archivo Excel">
+            <input type="file" id="fileInput" accept=".xlsx,.xls" hidden>
+            <div class="dropzone-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/>
+                <path d="M14 3v5h5"/>
+                <path d="M9 13h6M9 17h4"/>
+              </svg>
+            </div>
+            <h3>Arrastra y suelta tu inventario aquí</h3>
+            <p>o <span class="link-like">selecciona un archivo</span> desde tu computadora</p>
+            <p class="dropzone-hint">Máximo 20 MB. El archivo original nunca se modifica.</p>
+          </div>
+
+          <div class="file-card is-hidden" id="fileCard">
+            <div class="file-icon">XLS</div>
+            <div class="file-info">
+              <strong id="fileName"></strong>
+              <span id="fileSize"></span>
+            </div>
+            <button class="icon-button" id="removeFile" type="button" aria-label="Quitar archivo">×</button>
+          </div>
+
+          <button class="button primary wide" id="processBtn" type="button" disabled>
+            <span>Organizar inventario</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M5 12h14M13 6l6 6-6 6"/>
+            </svg>
+          </button>
+
+          <div class="processing is-hidden" id="processing" aria-live="polite">
+            <div class="spinner" aria-hidden="true"></div>
+            <div class="processing-copy">
+              <strong id="processingTitle">Procesando archivo</strong>
+              <span id="processingStep">Leyendo el Excel...</span>
+            </div>
+            <div class="progress"><span id="progressBar"></span></div>
+          </div>
+
+          <div class="micro-note">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+              <rect x="4" y="10" width="16" height="10" rx="2"/>
+              <path d="M8 10V7a4 4 0 0 1 8 0v3"/>
+            </svg>
+            <span>Procesamiento local seguro. No se guarda tu archivo en la nube.</span>
+          </div>
+        </div>
+
+        <aside class="panel guide-panel">
+          <span class="step-label">Cómo funciona</span>
+          <h2>De datos dispersos a un inventario claro.</h2>
+          <ol class="guide-list">
+            <li>
+              <span>01</span>
+              <div>
+                <strong>Carga tu Excel</strong>
+                <p>El sistema revisa todas las hojas y detecta el encabezado real.</p>
+              </div>
+            </li>
+            <li>
+              <span>02</span>
+              <div>
+                <strong>Clasificación automática</strong>
+                <p>Identifica tipo, sucursal y procedencia sin depender de nombres fijos.</p>
+              </div>
+            </li>
+            <li>
+              <span>03</span>
+              <div>
+                <strong>Descarga organizada</strong>
+                <p>Obtén un nuevo Excel agrupado, con resumen y alertas de revisión.</p>
+              </div>
+            </li>
+          </ol>
+          <div class="guide-note">
+            No se eliminan filas ni columnas. Los datos que no se puedan clasificar se conservan
+            y se marcan para revisión.
+          </div>
+        </aside>
+      </section>
+
+      <section class="results is-hidden" id="results">
+        <div class="results-head">
+          <div>
+            <span class="step-label">Paso 02</span>
+            <h2>Revisa y descarga</h2>
+            <p>Verifica la clasificación antes de descargar tu inventario organizado.</p>
+          </div>
+          <button class="button ghost" id="resetBtn" type="button">Procesar otro archivo</button>
+        </div>
+
+        <div class="summary-grid" id="summaryGrid"></div>
+
+        <div class="panel detection-panel">
+          <div class="panel-head compact">
+            <h3>Columnas detectadas</h3>
+            <span id="sheetsProcessed"></span>
+          </div>
+          <div class="detection-list" id="detectionList"></div>
+        </div>
+
+        <div class="panel preview-panel">
+          <div class="panel-head compact">
+            <div>
+              <h3>Vista previa del inventario</h3>
+              <span id="previewMeta"></span>
+            </div>
+            <span class="revision-legend"><span></span>Requiere revisión</span>
+          </div>
+          <div class="table-scroll">
+            <table class="preview-table">
+              <thead><tr id="previewHead"></tr></thead>
+              <tbody id="previewBody"></tbody>
+            </table>
+          </div>
+          <p class="preview-note" id="previewNote"></p>
+        </div>
+
+        <div class="panel warnings-panel is-hidden" id="warningsPanel">
+          <h3>Notas del procesamiento</h3>
+          <ul id="warningsList"></ul>
+        </div>
+
+        <div class="download-panel">
+          <div class="download-copy">
+            <span class="step-label">Paso 03</span>
+            <h3>Tu inventario está listo</h3>
+            <p id="downloadDescription">Descarga el nuevo Excel organizado. El archivo original permanece intacto.</p>
+          </div>
+          <a class="button primary" id="downloadBtn" href="#" download>
+            Descargar Excel organizado
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M12 3v12M7 10l5 5 5-5"/>
+              <path d="M5 21h14"/>
+            </svg>
+          </a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <span>Organizador de Inventarios Nissan</span>
+      <span class="footer-separator">/</span>
+      <span>Herramienta interna</span>
+    </footer>
+
+    <div class="credit">By Juan Antonio &amp; Brayan Santiago</div>
+    <div class="toast is-hidden" id="toast" role="status" aria-live="polite"></div>
+  </div>
+
+  <script src="app.js" defer></script>
+</body>
+</html>
