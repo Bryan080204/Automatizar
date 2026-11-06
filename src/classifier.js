@@ -6,6 +6,8 @@ const {
   contarPistasEncabezado
 } = require('./textUtils');
 
+const CATEGORIAS = ['Nacionales', 'Importados', 'Internacionales', 'NP300'];
+
 const REGLAS_DIMENSION = {
   tipo: [
     ['tipo', 100],
@@ -195,7 +197,47 @@ function crearRevision(dimensiones, tipo, sucursal, procedencia, fila, cantidadD
   return revision;
 }
 
+function pareceNP300(valor) {
+  const texto = normalizarTexto(valor);
+  if (!texto) return false;
+
+  return /(^|\s)np\s*3\s*[0o]\s*[0o](\s|$)/.test(texto);
+}
+
+function categoriaPorTexto(valor) {
+  const texto = normalizarTexto(valor);
+  if (!texto) return null;
+
+  if (texto.includes('internacional')) return 'Internacionales';
+  if (
+    texto.includes('importado')
+    || texto.includes('importacion')
+    || texto.includes('extranjero')
+  ) {
+    return 'Importados';
+  }
+  if (
+    texto.includes('nacional')
+    || texto.includes('nacionalizado')
+    || texto.includes('local')
+  ) {
+    return 'Nacionales';
+  }
+
+  return null;
+}
+
+function clasificarCategoria(tipo, valores, pista) {
+  const textos = [tipo, pista, ...(Array.isArray(valores) ? valores : [])];
+
+  if (textos.some(pareceNP300)) return 'NP300';
+
+  return categoriaPorTexto(tipo) || categoriaPorTexto(pista) || 'Sin clasificar';
+}
+
 module.exports = {
+  CATEGORIAS,
   detectarDimensiones,
-  crearRevision
+  crearRevision,
+  clasificarCategoria
 };

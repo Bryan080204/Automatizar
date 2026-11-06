@@ -4,10 +4,122 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Organiza automáticamente inventarios de vehículos Nissan desde archivos Excel.">
+  <meta name="theme-color" content="#0b0c0f">
   <title>Organizador de Inventarios Nissan</title>
+  <link rel="preload" as="image" href="assets/nissan-hero.jpg">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+  <svg class="svg-sprite" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <symbol id="i-arrow-left-right" viewBox="0 0 24 24">
+        <path d="M4 8h13M14 5l3 3-3 3"/>
+        <path d="M20 16H7M10 13l-3 3 3 3"/>
+      </symbol>
+      <symbol id="i-shield-check" viewBox="0 0 24 24">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/>
+        <path d="m9 12 2 2 4-4"/>
+      </symbol>
+      <symbol id="i-file-up" viewBox="0 0 24 24">
+        <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z"/>
+        <path d="M14 3v5h5"/>
+        <path d="M12 17v-5M9.8 14.2 12 12l2.2 2.2"/>
+      </symbol>
+      <symbol id="i-file-check" viewBox="0 0 24 24">
+        <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z"/>
+        <path d="M14 3v5h5"/>
+        <path d="m9 15 2 2 4-4"/>
+      </symbol>
+      <symbol id="i-file-sheet" viewBox="0 0 24 24">
+        <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z"/>
+        <path d="M14 3v5h5"/>
+        <path d="M8 12h8M8 16h8M11 12v6"/>
+      </symbol>
+      <symbol id="i-upload" viewBox="0 0 24 24">
+        <path d="M4 16v4h16v-4"/>
+        <path d="M12 16V4M7.5 8.5 12 4l4.5 4.5"/>
+      </symbol>
+      <symbol id="i-layers" viewBox="0 0 24 24">
+        <path d="m12 3 9 5-9 5-9-5 9-5Z"/>
+        <path d="m3 12 9 5 9-5"/>
+        <path d="m3 16 9 5 9-5"/>
+      </symbol>
+      <symbol id="i-download" viewBox="0 0 24 24">
+        <path d="M12 3v12M7 10l5 5 5-5"/>
+        <path d="M5 21h14"/>
+      </symbol>
+      <symbol id="i-route" viewBox="0 0 24 24">
+        <circle cx="6" cy="19" r="2"/>
+        <circle cx="18" cy="5" r="2"/>
+        <path d="M8 19h6a4 4 0 0 0 0-8H9a4 4 0 0 1 0-8h7"/>
+      </symbol>
+      <symbol id="i-chart" viewBox="0 0 24 24">
+        <path d="M3 3v18h18"/>
+        <path d="M7 16v-4M12 16V8M17 16v-6"/>
+      </symbol>
+      <symbol id="i-grid" viewBox="0 0 24 24">
+        <rect x="4" y="4" width="7" height="7" rx="1.2"/>
+        <rect x="13" y="4" width="7" height="7" rx="1.2"/>
+        <rect x="4" y="13" width="7" height="7" rx="1.2"/>
+        <rect x="13" y="13" width="7" height="7" rx="1.2"/>
+      </symbol>
+      <symbol id="i-table" viewBox="0 0 24 24">
+        <rect x="3" y="4" width="18" height="16" rx="2"/>
+        <path d="M3 10h18M9 10v10"/>
+      </symbol>
+      <symbol id="i-alert" viewBox="0 0 24 24">
+        <path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/>
+        <path d="M12 9v4M12 17h.01"/>
+      </symbol>
+      <symbol id="i-clock" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="9"/>
+        <path d="M12 7v5l3 2"/>
+      </symbol>
+      <symbol id="i-refresh" viewBox="0 0 24 24">
+        <path d="M21 12a9 9 0 1 1-2.6-6.4"/>
+        <path d="M21 3v6h-6"/>
+      </symbol>
+      <symbol id="i-clipboard" viewBox="0 0 24 24">
+        <path d="M9 4h6M9 4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2"/>
+        <path d="M9 4V3h6v1"/>
+        <path d="M9 11h6M9 15h4"/>
+      </symbol>
+      <symbol id="i-car" viewBox="0 0 24 24">
+        <path d="M5 17h14M6 17v2M18 17v2"/>
+        <path d="M3 13h18v4H3z"/>
+        <path d="m5 13 1.7-4.5A2 2 0 0 1 8.6 7h6.8a2 2 0 0 1 1.9 1.5L19 13"/>
+        <circle cx="7.5" cy="15" r="1"/>
+        <circle cx="16.5" cy="15" r="1"/>
+      </symbol>
+      <symbol id="i-ship" viewBox="0 0 24 24">
+        <path d="M4 17h16l-2 3H6l-2-3Z"/>
+        <path d="M6 17V9l6-4 6 4v8"/>
+        <path d="M12 5v12M8 12h8"/>
+      </symbol>
+      <symbol id="i-globe" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="9"/>
+        <path d="M3 12h18"/>
+        <path d="M12 3a15 15 0 0 1 0 18 15 15 0 0 1 0-18Z"/>
+      </symbol>
+      <symbol id="i-truck" viewBox="0 0 24 24">
+        <path d="M3 7h11v9H3z"/>
+        <path d="M14 10h4l3 3v3h-7"/>
+        <circle cx="7" cy="17.5" r="1.5"/>
+        <circle cx="17" cy="17.5" r="1.5"/>
+      </symbol>
+      <symbol id="i-lock" viewBox="0 0 24 24">
+        <rect x="4" y="10" width="16" height="10" rx="2"/>
+        <path d="M8 10V7a4 4 0 0 1 8 0v3"/>
+      </symbol>
+      <symbol id="i-arrow-right" viewBox="0 0 24 24">
+        <path d="M5 12h14M13 6l6 6-6 6"/>
+      </symbol>
+      <symbol id="i-x" viewBox="0 0 24 24">
+        <path d="m6 6 12 12M18 6 6 18"/>
+      </symbol>
+    </defs>
+  </svg>
+
   <div class="page">
     <header class="site-header">
       <a class="brand" href="/" aria-label="Inicio">
@@ -17,80 +129,69 @@
           <small>Inventario</small>
         </span>
       </a>
-      <span class="header-tag">Organizador inteligente de Excel</span>
+      <span class="header-tag">
+        <svg class="icon" aria-hidden="true"><use href="#i-arrow-left-right"></use></svg>
+        Archivo origen → archivo resultado
+      </span>
     </header>
 
     <main>
       <section class="hero">
         <div class="hero-content">
-          <span class="eyebrow"><span class="eyebrow-dot"></span>Control de inventario</span>
-          <h1>Ordena tu inventario <span>Nissan</span> en segundos.</h1>
+          <span class="eyebrow">
+            <svg class="icon" aria-hidden="true"><use href="#i-shield-check"></use></svg>
+            Control de inventario
+          </span>
+          <h1>Un archivo origen. <span>Cuatro categorías</span> listas.</h1>
           <p>
-            Sube tu archivo de Excel y el sistema detectará, clasificará y agrupará los vehículos
-            por tipo, sucursal y procedencia. Sin alterar tus datos originales.
+            Sube tu Excel y obtén un archivo resultado con el inventario separado en
+            Nacionales, Importados, Internacionales y NP300, además de resumen y alertas.
+            Tus datos originales no se modifican.
           </p>
           <div class="hero-tags">
-            <span>Nacionales</span>
-            <span>Importados</span>
-            <span>Internacionales</span>
+            <span class="tag-nacionales">
+              <svg class="icon" aria-hidden="true"><use href="#i-car"></use></svg>Nacionales
+            </span>
+            <span class="tag-importados">
+              <svg class="icon" aria-hidden="true"><use href="#i-ship"></use></svg>Importados
+            </span>
+            <span class="tag-internacionales">
+              <svg class="icon" aria-hidden="true"><use href="#i-globe"></use></svg>Internacionales
+            </span>
+            <span class="tag-np300">
+              <svg class="icon" aria-hidden="true"><use href="#i-truck"></use></svg>NP300
+            </span>
           </div>
         </div>
 
-        <div class="hero-visual" aria-hidden="true">
-          <div class="visual-card">
-            <div class="visual-line"><span></span><span></span><span></span></div>
-            <div class="visual-row">
-              <span class="visual-dot red"></span>
-              <span class="visual-bar long"></span>
-              <span class="visual-bar short"></span>
-            </div>
-            <div class="visual-row">
-              <span class="visual-dot gray"></span>
-              <span class="visual-bar medium"></span>
-              <span class="visual-bar tiny"></span>
-            </div>
-            <div class="visual-row">
-              <span class="visual-dot gray"></span>
-              <span class="visual-bar long"></span>
-              <span class="visual-bar medium"></span>
-            </div>
-            <div class="visual-row">
-              <span class="visual-dot gray"></span>
-              <span class="visual-bar medium"></span>
-              <span class="visual-bar short"></span>
-            </div>
-            <div class="visual-footer">
-              <span class="visual-chip">TIPO</span>
-              <span class="visual-chip">SUCURSAL</span>
-              <span class="visual-chip">PROCEDENCIA</span>
-            </div>
-          </div>
-          <div class="visual-badge">XLSX <span>→</span> ORDENADO</div>
-        </div>
       </section>
 
       <section class="workspace" id="workspace">
         <div class="panel upload-panel" id="uploadSection">
           <div class="panel-head">
-            <div>
-              <span class="step-label">Paso 01</span>
-              <h2>Sube tu archivo Excel</h2>
+            <div class="panel-heading">
+              <span class="panel-icon">
+                <svg class="icon" aria-hidden="true"><use href="#i-file-up"></use></svg>
+              </span>
+              <div>
+                <span class="step-label">Paso 01 · Archivo origen</span>
+                <h2>Sube tu inventario</h2>
+              </div>
             </div>
-            <span class="format-badge">.xlsx / .xls</span>
+            <span class="format-badge">
+              <svg class="icon" aria-hidden="true"><use href="#i-file-sheet"></use></svg>
+              .xlsx / .xls
+            </span>
           </div>
 
           <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Seleccionar archivo Excel">
             <input type="file" id="fileInput" accept=".xlsx,.xls" hidden>
             <div class="dropzone-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
-                <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/>
-                <path d="M14 3v5h5"/>
-                <path d="M9 13h6M9 17h4"/>
-              </svg>
+              <svg class="icon" aria-hidden="true"><use href="#i-file-up"></use></svg>
             </div>
-            <h3>Arrastra y suelta tu inventario aquí</h3>
+            <h3>Arrastra y suelta tu archivo origen aquí</h3>
             <p>o <span class="link-like">selecciona un archivo</span> desde tu computadora</p>
-            <p class="dropzone-hint">Máximo 20 MB. El archivo original nunca se modifica.</p>
+            <p class="dropzone-hint">Máximo 20 MB · Se genera un archivo nuevo, el original no se modifica.</p>
           </div>
 
           <div class="file-card is-hidden" id="fileCard">
@@ -99,15 +200,29 @@
               <strong id="fileName"></strong>
               <span id="fileSize"></span>
             </div>
-            <button class="icon-button" id="removeFile" type="button" aria-label="Quitar archivo">×</button>
+            <button class="icon-button" id="removeFile" type="button" aria-label="Quitar archivo">
+              <svg class="icon" aria-hidden="true"><use href="#i-x"></use></svg>
+            </button>
           </div>
 
           <button class="button primary wide" id="processBtn" type="button" disabled>
-            <span>Organizar inventario</span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-              <path d="M5 12h14M13 6l6 6-6 6"/>
-            </svg>
+            <svg class="icon" aria-hidden="true"><use href="#i-file-check"></use></svg>
+            <span>Generar archivo resultado</span>
           </button>
+
+          <div class="flow-strip" aria-hidden="true">
+            <span class="flow-step">
+              <svg class="icon"><use href="#i-upload"></use></svg>Archivo origen
+            </span>
+            <svg class="icon flow-arrow"><use href="#i-arrow-right"></use></svg>
+            <span class="flow-step">
+              <svg class="icon"><use href="#i-layers"></use></svg>4 categorías
+            </span>
+            <svg class="icon flow-arrow"><use href="#i-arrow-right"></use></svg>
+            <span class="flow-step accent">
+              <svg class="icon"><use href="#i-file-check"></use></svg>Archivo resultado
+            </span>
+          </div>
 
           <div class="processing is-hidden" id="processing" aria-live="polite">
             <div class="spinner" aria-hidden="true"></div>
@@ -119,37 +234,50 @@
           </div>
 
           <div class="micro-note">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-              <rect x="4" y="10" width="16" height="10" rx="2"/>
-              <path d="M8 10V7a4 4 0 0 1 8 0v3"/>
-            </svg>
+            <svg class="icon" aria-hidden="true"><use href="#i-lock"></use></svg>
             <span>Procesamiento local seguro. No se guarda tu archivo en la nube.</span>
           </div>
         </div>
 
         <aside class="panel guide-panel">
-          <span class="step-label">Cómo funciona</span>
-          <h2>De datos dispersos a un inventario claro.</h2>
+          <div class="guide-heading">
+            <span class="panel-icon">
+              <svg class="icon" aria-hidden="true"><use href="#i-route"></use></svg>
+            </span>
+            <div>
+              <span class="step-label">Cómo funciona</span>
+              <h2>De datos dispersos a un inventario claro.</h2>
+            </div>
+          </div>
           <ol class="guide-list">
             <li>
-              <span>01</span>
+              <span class="guide-step">
+                <svg class="icon" aria-hidden="true"><use href="#i-upload"></use></svg>
+                <b>01</b>
+              </span>
               <div>
-                <strong>Carga tu Excel</strong>
+                <strong>Carga tu archivo origen</strong>
                 <p>El sistema revisa todas las hojas y detecta el encabezado real.</p>
               </div>
             </li>
             <li>
-              <span>02</span>
+              <span class="guide-step">
+                <svg class="icon" aria-hidden="true"><use href="#i-layers"></use></svg>
+                <b>02</b>
+              </span>
               <div>
-                <strong>Clasificación automática</strong>
-                <p>Identifica tipo, sucursal y procedencia sin depender de nombres fijos.</p>
+                <strong>Clasificación en 4 categorías</strong>
+                <p>Nacionales, Importados, Internacionales y NP300, sin depender de nombres fijos.</p>
               </div>
             </li>
             <li>
-              <span>03</span>
+              <span class="guide-step">
+                <svg class="icon" aria-hidden="true"><use href="#i-download"></use></svg>
+                <b>03</b>
+              </span>
               <div>
-                <strong>Descarga organizada</strong>
-                <p>Obtén un nuevo Excel agrupado, con resumen y alertas de revisión.</p>
+                <strong>Descarga tu archivo resultado</strong>
+                <p>Un Excel nuevo con las 4 categorías, resumen y alertas de revisión.</p>
               </div>
             </li>
           </ol>
@@ -162,29 +290,65 @@
 
       <section class="results is-hidden" id="results">
         <div class="results-head">
-          <div>
-            <span class="step-label">Paso 02</span>
-            <h2>Revisa y descarga</h2>
-            <p>Verifica la clasificación antes de descargar tu inventario organizado.</p>
+          <div class="results-heading">
+            <span class="panel-icon">
+              <svg class="icon" aria-hidden="true"><use href="#i-clipboard"></use></svg>
+            </span>
+            <div>
+              <span class="step-label">Paso 02 · Archivo resultado</span>
+              <h2>Revisa y descarga</h2>
+              <p>Tu inventario quedó separado en Nacionales, Importados, Internacionales y NP300.</p>
+            </div>
           </div>
-          <button class="button ghost" id="resetBtn" type="button">Procesar otro archivo</button>
+          <button class="button ghost" id="resetBtn" type="button">
+            <svg class="icon" aria-hidden="true"><use href="#i-refresh"></use></svg>
+            Procesar otro archivo
+          </button>
         </div>
 
         <div class="summary-grid" id="summaryGrid"></div>
 
+        <div class="panel categories-panel">
+          <div class="panel-head compact">
+            <div class="panel-heading">
+              <span class="panel-icon small">
+                <svg class="icon" aria-hidden="true"><use href="#i-chart"></use></svg>
+              </span>
+              <div>
+                <h3>Distribución por categoría</h3>
+                <span id="categoriesMeta">Conteo y porcentaje de cada categoría</span>
+              </div>
+            </div>
+            <span class="categories-total" id="categoriesTotal"></span>
+          </div>
+          <div class="category-bars" id="categoryBars"></div>
+        </div>
+
         <div class="panel detection-panel">
           <div class="panel-head compact">
-            <h3>Columnas detectadas</h3>
-            <span id="sheetsProcessed"></span>
+            <div class="panel-heading">
+              <span class="panel-icon small">
+                <svg class="icon" aria-hidden="true"><use href="#i-grid"></use></svg>
+              </span>
+              <div>
+                <h3>Hojas y columnas detectadas</h3>
+                <span id="sheetsProcessed"></span>
+              </div>
+            </div>
           </div>
           <div class="detection-list" id="detectionList"></div>
         </div>
 
         <div class="panel preview-panel">
           <div class="panel-head compact">
-            <div>
-              <h3>Vista previa del inventario</h3>
-              <span id="previewMeta"></span>
+            <div class="panel-heading">
+              <span class="panel-icon small">
+                <svg class="icon" aria-hidden="true"><use href="#i-table"></use></svg>
+              </span>
+              <div>
+                <h3>Vista previa del archivo resultado</h3>
+                <span id="previewMeta"></span>
+              </div>
             </div>
             <span class="revision-legend"><span></span>Requiere revisión</span>
           </div>
@@ -198,23 +362,47 @@
         </div>
 
         <div class="panel warnings-panel is-hidden" id="warningsPanel">
-          <h3>Notas del procesamiento</h3>
+          <div class="warnings-heading">
+            <span class="panel-icon small">
+              <svg class="icon" aria-hidden="true"><use href="#i-alert"></use></svg>
+            </span>
+            <h3>Notas del procesamiento</h3>
+          </div>
           <ul id="warningsList"></ul>
         </div>
 
         <div class="download-panel">
           <div class="download-copy">
-            <span class="step-label">Paso 03</span>
-            <h3>Tu inventario está listo</h3>
-            <p id="downloadDescription">Descarga el nuevo Excel organizado. El archivo original permanece intacto.</p>
+            <div class="download-heading">
+              <span class="download-icon">
+                <svg class="icon" aria-hidden="true"><use href="#i-file-check"></use></svg>
+              </span>
+              <div>
+                <span class="step-label">Paso 03 · Descarga</span>
+                <h3>Tu archivo resultado está listo</h3>
+              </div>
+            </div>
+            <p id="downloadDescription">Descarga el Excel nuevo con las 4 categorías. El archivo original permanece intacto.</p>
+            <div class="download-file">
+              <div class="file-icon file-icon-light">
+                <svg class="icon" aria-hidden="true"><use href="#i-file-sheet"></use></svg>
+              </div>
+              <div class="download-file-info">
+                <strong id="downloadFileName">archivo_resultado.xlsx</strong>
+                <span id="downloadFileMeta">Excel · 4 categorías · listo para descargar</span>
+              </div>
+            </div>
           </div>
-          <a class="button primary" id="downloadBtn" href="#" download>
-            Descargar Excel organizado
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-              <path d="M12 3v12M7 10l5 5 5-5"/>
-              <path d="M5 21h14"/>
-            </svg>
-          </a>
+          <div class="download-actions">
+            <a class="button primary download-button" id="downloadBtn" href="#" download>
+              Descargar archivo resultado
+              <svg class="icon" aria-hidden="true"><use href="#i-download"></use></svg>
+            </a>
+            <span class="download-expiry">
+              <svg class="icon" aria-hidden="true"><use href="#i-clock"></use></svg>
+              Enlace válido durante 30 minutos.
+            </span>
+          </div>
         </div>
       </section>
     </main>
@@ -222,10 +410,10 @@
     <footer class="site-footer">
       <span>Organizador de Inventarios Nissan</span>
       <span class="footer-separator">/</span>
-      <span>Herramienta interna</span>
+      <span>Nacionales · Importados · Internacionales · NP300</span>
     </footer>
 
-    <div class="credit">By Juan Antonio &amp; Brayan Santiago</div>
+    <div class="credit">Juan Antonio // Bryan Santiago</div>
     <div class="toast is-hidden" id="toast" role="status" aria-live="polite"></div>
   </div>
 

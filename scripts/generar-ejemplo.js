@@ -13,7 +13,8 @@ const filasGeneral = [
   [5, 'Universidad', '', '', 'Nissan', 'X-Trail', 2021, 'Negro', 'JN8AT3BB5MW800105', 390000, new Date(2026, 9, 5)],
   [6, 'Centro', 'Oaxaca capital', 'Internacional', 'Nissan', 'Pathfinder', 2024, 'Plata', '5N1DR3CC1RC800106', 620000, new Date(2026, 9, 6)],
   [7, 'Madero', 'Huajuapan', 'Nacional', 'Nissan', 'Versa', 2023, 'Blanco', '', 260000, new Date(2026, 9, 7)],
-  ['Total de unidades: 7']
+  [8, 'Centro', 'Oaxaca capital', 'Nacional', 'Nissan', 'NP300', 2024, 'Gris', '3N6DD23T5RK800107', 398000, new Date(2026, 9, 8)],
+  ['Total de unidades: 8']
 ];
 
 const hojaGeneral = XLSX.utils.aoa_to_sheet(filasGeneral);

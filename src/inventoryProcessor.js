@@ -6,8 +6,12 @@ const {
   calcularTotalColumnas,
   construirEncabezados
 } = require('./textUtils');
-const { detectarDimensiones, crearRevision } = require('./classifier');
-const { obtenerXlsxConFormato } = require('./styleSource');
+const {
+  CATEGORIAS,
+  detectarDimensiones,
+  crearRevision,
+  clasificarCategoria
+} = require('./classifier');
 const {
   COLUMNAS_DERIVADAS,
   contarValores,
@@ -147,7 +151,13 @@ function procesarHoja(filas, nombreHoja, desplazamientoFilas, desplazamientoColu
     const tipo = dimensiones.tipo ? aTexto(filaClasificacion[dimensiones.tipo.index]) : '';
     const sucursal = dimensiones.sucursal ? aTexto(filaClasificacion[dimensiones.sucursal.index]) : '';
     const procedencia = dimensiones.procedencia ? aTexto(filaClasificacion[dimensiones.procedencia.index]) : '';
+    const categoria = clasificarCategoria(tipo, filaClasificacion, nombreHoja);
     const revision = crearRevision(dimensiones, tipo, sucursal, procedencia, filaSegura, cantidadDatos);
+
+    if (categoria === 'Sin clasificar' && !revision.includes('Sin clasificar')) {
+      revision.push('Sin clasificar');
+    }
+
     const filaOriginal = indiceEncabezado >= 0
       ? desplazamientoFilas + indiceEncabezado + indice + 2
       : desplazamientoFilas + indice + 1;
@@ -159,6 +169,7 @@ function procesarHoja(filas, nombreHoja, desplazamientoFilas, desplazamientoColu
       tipo,
       sucursal,
       procedencia,
+      categoria,
       revision
     });
   });
@@ -231,7 +242,6 @@ async function procesarInventario(buffer, nombreArchivo) {
     throw new ErrorInventario('El archivo no contiene hojas de cálculo.');
   }
 
-  const bufferFormato = await obtenerXlsxConFormato(buffer);
   const hojas = [];
 
   for (const nombreHoja of nombresHojas) {
@@ -272,8 +282,8 @@ async function procesarInventario(buffer, nombreArchivo) {
     procedencia: hojas.some((hoja) => dimensionDetectada(hoja, 'procedencia'))
   };
 
-  const clavesOrden = ['tipo', 'sucursal', 'procedencia']
-    .filter((dimension) => dimensionesGlobales[dimension]);
+  const clavesOrden = ['categoria', 'tipo', 'sucursal', 'procedencia']
+    .filter((dimension) => dimension === 'categoria' || dimensionesGlobales[dimension]);
 
   if (!clavesOrden.length) clavesOrden.push('hoja');
 
@@ -282,6 +292,22 @@ async function procesarInventario(buffer, nombreArchivo) {
   const porTipo = contarValores(registros, 'tipo');
   const porSucursal = contarValores(registros, 'sucursal');
   const porProcedencia = contarValores(registros, 'procedencia');
+  const conteoCategorias = new Map(CATEGORIAS.map((label) => [label, 0]));
+  let sinClasificar = 0;
+
+  for (const registro of registros) {
+    if (conteoCategorias.has(registro.categoria)) {
+      conteoCategorias.set(registro.categoria, conteoCategorias.get(registro.categoria) + 1);
+    } else {
+      sinClasificar += 1;
+    }
+  }
+
+  const porCategoria = [...conteoCategorias].map(([label, count]) => ({ label, count }));
+  if (sinClasificar > 0) {
+    porCategoria.push({ label: 'Sin clasificar', count: sinClasificar });
+  }
+
   const paraRevision = registros.filter((registro) => registro.revision.length > 0).length;
   const hojasConDatos = hojas.filter((hoja) => hoja.registros.length > 0).length;
   const hojasVacias = hojas.filter((hoja) => hoja.vacia || hoja.registros.length === 0).length;
@@ -296,7 +322,8 @@ async function procesarInventario(buffer, nombreArchivo) {
     procedenciasUnicas: contarUnicos(registros, 'procedencia'),
     porTipo,
     porSucursal,
-    porProcedencia
+    porProcedencia,
+    porCategoria
   };
 
   const advertencias = [];
@@ -331,12 +358,6 @@ async function procesarInventario(buffer, nombreArchivo) {
     );
   }
 
-  if (!bufferFormato) {
-    advertencias.push(
-      'No se pudo conservar el diseño del archivo original; se generó un libro nuevo solo con las hojas organizadas.'
-    );
-  }
-
   const advertenciasUnicas = [...new Set(advertencias)];
   const nombreSalida = crearNombreSalida(nombreArchivo);
   const fechaGeneracion = new Date().toLocaleString('es-MX', {
@@ -359,7 +380,7 @@ async function procesarInventario(buffer, nombreArchivo) {
     nombreSalida,
     fechaGeneracion,
     dimensionesGlobales
-  }, bufferFormato);
+  });
 
   const preview = {
     nombreArchivo,
@@ -369,7 +390,10 @@ async function procesarInventario(buffer, nombreArchivo) {
     filas: filasPrevia,
     totalRegistros: registros.length,
     filasMostradas: filasPrevia.length,
+    inicioDerivadas: mapas.columnas.length,
+    indiceCategoria: columnasPrevia.findIndex((columna) => columna.label === 'Categoría'),
     indiceRevision: columnasPrevia.length - 1,
+    pesoSalida: bufferSalida.length,
     resumen: {
       ...resumen,
       dimensiones: dimensionesGlobales

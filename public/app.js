@@ -14,6 +14,9 @@ const elementos = {
   results: document.getElementById('results'),
   resetBtn: document.getElementById('resetBtn'),
   summaryGrid: document.getElementById('summaryGrid'),
+  categoriesMeta: document.getElementById('categoriesMeta'),
+  categoriesTotal: document.getElementById('categoriesTotal'),
+  categoryBars: document.getElementById('categoryBars'),
   sheetsProcessed: document.getElementById('sheetsProcessed'),
   detectionList: document.getElementById('detectionList'),
   previewHead: document.getElementById('previewHead'),
@@ -24,17 +27,37 @@ const elementos = {
   warningsList: document.getElementById('warningsList'),
   downloadBtn: document.getElementById('downloadBtn'),
   downloadDescription: document.getElementById('downloadDescription'),
+  downloadFileName: document.getElementById('downloadFileName'),
+  downloadFileMeta: document.getElementById('downloadFileMeta'),
   toast: document.getElementById('toast')
 };
 
+const CATEGORIAS_INFO = {
+  Nacionales: { clase: 'nacionales', color: '#0f7b53', icono: 'car' },
+  Importados: { clase: 'importados', color: '#c3002f', icono: 'ship' },
+  Internacionales: { clase: 'internacionales', color: '#2563eb', icono: 'globe' },
+  NP300: { clase: 'np300', color: '#b45309', icono: 'truck' },
+  'Sin clasificar': { clase: 'sin-clasificar', color: '#687182', icono: 'alert' }
+};
+
 const PASOS = [
-  'Leyendo el archivo Excel...',
+  'Leyendo el archivo origen...',
   'Detectando encabezados y columnas...',
-  'Agrupando por tipo, sucursal y procedencia...',
-  'Generando el archivo organizado...'
+  'Clasificando en Nacionales, Importados, Internacionales y NP300...',
+  'Generando el archivo resultado...'
 ];
 
 const LIMITE_BYTES = 20 * 1024 * 1024;
+
+function crearIcono(nombre, clase = 'icon') {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('class', clase);
+  svg.setAttribute('aria-hidden', 'true');
+  const uso = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+  uso.setAttribute('href', `#i-${nombre}`);
+  svg.appendChild(uso);
+  return svg;
+}
 
 let archivoSeleccionado = null;
 let resultadoActual = null;
@@ -84,7 +107,7 @@ function seleccionarArchivo(archivo) {
 
   archivoSeleccionado = archivo;
   elementos.fileName.textContent = archivo.name;
-  elementos.fileSize.textContent = `${formatearPeso(archivo.size)} · Listo para organizar`;
+  elementos.fileSize.textContent = `${formatearPeso(archivo.size)} · Listo para generar el resultado`;
   elementos.fileCard.classList.remove('is-hidden');
   elementos.processBtn.disabled = false;
   elementos.processing.classList.add('is-hidden');
@@ -130,29 +153,100 @@ function detenerProgreso() {
   elementos.processBtn.disabled = !archivoSeleccionado;
 }
 
-function crearCeldaResumen(etiqueta, valor, destacada = false) {
+function crearCeldaResumen(etiqueta, valor, opciones = {}) {
+  const { destacada = false, categoria = null, icono = null } = opciones;
+  const info = categoria ? (CATEGORIAS_INFO[categoria] || CATEGORIAS_INFO['Sin clasificar']) : null;
   const tarjeta = document.createElement('div');
-  tarjeta.className = `summary-card${destacada ? ' highlight' : ''}`;
+  tarjeta.className = `summary-card${destacada ? ' highlight' : ''}${categoria ? ' category-card' : ''}`;
 
   const titulo = document.createElement('span');
   titulo.textContent = etiqueta;
 
+  if (info) {
+    tarjeta.classList.add(`is-${info.clase}`);
+    tarjeta.style.setProperty('--category-color', info.color);
+  }
+
   const numero = document.createElement('strong');
   numero.textContent = String(valor);
 
-  tarjeta.append(titulo, numero);
+  const iconoTarjeta = document.createElement('span');
+  iconoTarjeta.className = 'summary-icon';
+  iconoTarjeta.appendChild(crearIcono(icono || (info ? info.icono : 'clipboard')));
+
+  tarjeta.append(titulo, numero, iconoTarjeta);
   return tarjeta;
 }
 
 function renderizarResumen(resultado) {
   const resumen = resultado.resumen;
-  elementos.summaryGrid.replaceChildren(
-    crearCeldaResumen('Registros', resumen.totalRegistros, true),
-    crearCeldaResumen('Tipos', resumen.tiposUnicos),
-    crearCeldaResumen('Sucursales', resumen.sucursalesUnicas),
-    crearCeldaResumen('Procedencias', resumen.procedenciasUnicas),
-    crearCeldaResumen('Para revisión', resumen.paraRevision, resumen.paraRevision > 0)
-  );
+  const conteos = new Map((resumen.porCategoria || []).map((item) => [item.label, item.count]));
+  const tarjetas = [
+    crearCeldaResumen('Registros', resumen.totalRegistros, {
+      destacada: true,
+      icono: 'clipboard'
+    }),
+    ...['Nacionales', 'Importados', 'Internacionales', 'NP300'].map((categoria) => (
+      crearCeldaResumen(categoria, conteos.get(categoria) || 0, { categoria })
+    ))
+  ];
+
+  tarjetas.push(crearCeldaResumen('Para revisión', resumen.paraRevision, {
+    destacada: resumen.paraRevision > 0,
+    icono: 'alert'
+  }));
+
+  elementos.summaryGrid.replaceChildren(...tarjetas);
+}
+
+function renderizarCategorias(resultado) {
+  const resumen = resultado.resumen;
+  const total = resumen.totalRegistros || 0;
+  const conteos = new Map((resumen.porCategoria || []).map((item) => [item.label, item.count]));
+  const fijas = ['Nacionales', 'Importados', 'Internacionales', 'NP300'];
+
+  elementos.categoryBars.replaceChildren();
+  elementos.categoriesMeta.textContent = `4 categorías fijas · ${total} registro(s) en total`;
+  elementos.categoriesTotal.textContent = `${total} registro(s)`;
+
+  for (const categoria of fijas) {
+    const info = CATEGORIAS_INFO[categoria];
+    const count = conteos.get(categoria) || 0;
+    const porcentaje = total > 0 ? (count / total) * 100 : 0;
+    const fila = document.createElement('div');
+    fila.className = 'category-row';
+    fila.style.setProperty('--category-color', info.color);
+
+    const etiqueta = document.createElement('span');
+    etiqueta.className = `category-badge is-${info.clase}`;
+    etiqueta.append(
+      crearIcono(info.icono, 'icon category-icon'),
+      document.createTextNode(categoria)
+    );
+
+    const medidor = document.createElement('div');
+    medidor.className = 'category-meter';
+    const barra = document.createElement('span');
+    barra.style.width = `${porcentaje}%`;
+    medidor.appendChild(barra);
+
+    const cantidad = document.createElement('strong');
+    cantidad.textContent = String(count);
+
+    const proporcion = document.createElement('small');
+    proporcion.textContent = `${porcentaje.toFixed(0)}%`;
+
+    fila.append(etiqueta, medidor, cantidad, proporcion);
+    elementos.categoryBars.appendChild(fila);
+  }
+
+  const sinClasificar = conteos.get('Sin clasificar') || 0;
+  if (sinClasificar > 0) {
+    const nota = document.createElement('p');
+    nota.className = 'category-note';
+    nota.textContent = `${sinClasificar} registro(s) sin clasificar. Se conservaron en la hoja «Sin clasificar» y en la hoja de revisión.`;
+    elementos.categoryBars.appendChild(nota);
+  }
 }
 
 function crearChipDeteccion(etiqueta, valor) {
@@ -171,7 +265,10 @@ function renderizarDeteccion(resultado) {
     contenedor.className = 'detection-sheet';
 
     const nombre = document.createElement('strong');
-    nombre.textContent = hoja.nombre;
+    nombre.append(
+      crearIcono('file-sheet', 'icon detection-icon'),
+      document.createTextNode(hoja.nombre)
+    );
 
     contenedor.appendChild(nombre);
 
@@ -207,17 +304,23 @@ function renderizarTabla(resultado) {
   elementos.previewHead.replaceChildren();
   elementos.previewBody.replaceChildren();
 
-  for (const columna of resultado.columnas) {
-    elementos.previewHead.appendChild(crearEncabezadoTabla(columna));
-  }
-
   const indiceRevision = resultado.indiceRevision;
-  const inicioDerivadas = indiceRevision - 5;
+  const indiceCategoria = Number.isInteger(resultado.indiceCategoria) ? resultado.indiceCategoria : -1;
+  const inicioDerivadas = resultado.inicioDerivadas ?? indiceRevision - 5;
+  const indices = resultado.columnas.map((columna, indice) => indice);
+  const indicesMostrados = indiceCategoria >= 0
+    ? [indiceCategoria, ...indices.filter((indice) => indice !== indiceCategoria)]
+    : indices;
+
+  for (const indice of indicesMostrados) {
+    elementos.previewHead.appendChild(crearEncabezadoTabla(resultado.columnas[indice]));
+  }
 
   for (const fila of resultado.filas) {
     const tr = document.createElement('tr');
 
-    fila.forEach((valor, indice) => {
+    indicesMostrados.forEach((indice) => {
+      const valor = fila[indice];
       const celda = document.createElement('td');
       const texto = valor === null || valor === undefined ? '' : String(valor);
       const esDerivada = indice >= inicioDerivadas && indice <= indiceRevision;
@@ -227,10 +330,23 @@ function renderizarTabla(resultado) {
       if (texto === '') {
         celda.textContent = '—';
         celda.classList.add('is-empty');
+      } else if (indice === indiceCategoria) {
+        const info = CATEGORIAS_INFO[texto] || CATEGORIAS_INFO['Sin clasificar'];
+        const etiqueta = document.createElement('span');
+        etiqueta.className = `category-badge table-badge is-${info.clase}`;
+        etiqueta.append(
+          crearIcono(info.icono, 'icon table-badge-icon'),
+          document.createTextNode(texto)
+        );
+        celda.classList.add('is-category', `is-${info.clase}`);
+        celda.appendChild(etiqueta);
       } else if (indice === indiceRevision) {
         const etiqueta = document.createElement('span');
         etiqueta.className = 'revision-tag';
-        etiqueta.textContent = 'Revisar';
+        etiqueta.append(
+          crearIcono('alert', 'icon revision-icon'),
+          document.createTextNode('Revisar')
+        );
         celda.classList.add('is-revision');
         celda.title = texto;
         celda.appendChild(etiqueta);
@@ -248,10 +364,10 @@ function renderizarTabla(resultado) {
   const total = resultado.totalRegistros;
   const mostrados = resultado.filasMostradas;
 
-  elementos.previewMeta.textContent = `${total} registro(s) · ${resultado.hojas.length} hoja(s) · ${resultado.fechaGeneracion}`;
+  elementos.previewMeta.textContent = `${total} registro(s) · 4 categorías · ${resultado.fechaGeneracion}`;
   elementos.previewNote.textContent = mostrados < total
-    ? `Mostrando ${mostrados} de ${total} registros. El Excel descargado contiene todos los registros completos.`
-    : `Vista previa completa: ${total} registro(s). El Excel descargado contiene la información organizada.`;
+    ? `Mostrando ${mostrados} de ${total} registros. El archivo resultado contiene todos los registros y sus 4 categorías.`
+    : `Vista previa completa. El archivo resultado incluye las 4 categorías, el inventario completo y la hoja de revisión.`;
 }
 
 function renderizarNotas(resultado) {
@@ -276,14 +392,23 @@ function renderizarResultado(resultado) {
   resultadoActual = resultado;
 
   renderizarResumen(resultado);
+  renderizarCategorias(resultado);
   renderizarDeteccion(resultado);
   renderizarTabla(resultado);
   renderizarNotas(resultado);
 
+  const conteos = new Map((resultado.resumen.porCategoria || []).map((item) => [item.label, item.count]));
+  const categoriasConRegistros = ['Nacionales', 'Importados', 'Internacionales', 'NP300']
+    .filter((categoria) => (conteos.get(categoria) || 0) > 0).length;
+  const peso = formatearPeso(resultado.pesoSalida || 0);
+
   elementos.downloadBtn.href = `/api/descargar/${resultado.token}`;
   elementos.downloadBtn.setAttribute('download', resultado.nombreSalida);
+  elementos.downloadFileName.textContent = resultado.nombreSalida;
+  elementos.downloadFileMeta.textContent =
+    `Excel · ${peso} · ${categoriasConRegistros} de 4 categoría(s) con registros`;
   elementos.downloadDescription.textContent =
-    `Se generó «${resultado.nombreSalida}» con ${resultado.totalRegistros} registro(s). El archivo original permanece intacto.`;
+    'El archivo incluye las 4 categorías, el inventario completo y la hoja de revisión. El original permanece intacto.';
 }
 
 async function procesarArchivo() {
@@ -317,7 +442,7 @@ async function procesarArchivo() {
       renderizarResultado(datos);
       elementos.results.scrollIntoView({ behavior: 'smooth', block: 'start' });
       detenerProgreso();
-      mostrarToast('Archivo procesado correctamente. Tu inventario está listo.');
+      mostrarToast('Archivo procesado. Tu archivo resultado está listo para descargar.');
     }, 450);
   } catch (error) {
     detenerProgreso();
