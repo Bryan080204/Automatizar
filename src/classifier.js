@@ -1,243 +1,227 @@
-const {
-  PISTAS_NACIONALIDAD,
-  normalizarTexto,
-  contieneFrase,
-  aTexto,
-  contarPistasEncabezado
-} = require('./textUtils');
+const { normalizarTexto, aTexto } = require('./textUtils');
 
-const CATEGORIAS = ['Nacionales', 'Importados', 'Internacionales', 'NP300'];
+/**
+ * Catálogo de clasificación para la LISTA DE EXISTENCIAS de Nissan.
+ *
+ * Las letras solicitadas son:
+ *   I = Importado
+ *   C = Compacto
+ *   D = Doméstico / NP300
+ *   S = Subcompacto
+ */
 
-const REGLAS_DIMENSION = {
-  tipo: [
-    ['tipo', 100],
-    ['clasificacion', 95],
-    ['categoria', 90],
-    ['nacional', 85],
-    ['importado', 85],
-    ['internacional', 85],
-    ['extranjero', 85],
-    ['nacionalidad', 80],
-    ['condicion', 55],
-    ['origen', 35]
-  ],
-  sucursal: [
-    ['sucursal', 100],
-    ['agencia', 95],
-    ['concesionario', 90],
-    ['distribuidor', 85],
-    ['dealer', 80],
-    ['punto de venta', 80],
-    ['sala de venta', 80],
-    ['tienda', 70]
-  ],
-  procedencia: [
-    ['procedencia', 100],
-    ['ciudad', 95],
-    ['localidad', 90],
-    ['municipio', 88],
-    ['poblacion', 85],
-    ['plaza', 70],
-    ['region', 60],
-    ['entidad', 55],
-    ['pais', 50],
-    ['zona', 50],
-    ['lugar', 45],
-    ['origen', 35]
-  ]
+const CATEGORIAS = ['Importados', 'Compactos', 'NP300', 'Subcompactos'];
+
+const CATEGORIA_DETALLE = {
+  Importados: {
+    letra: 'I',
+    color: 'FFC3002F',
+    fondo: 'FFFFE9EF',
+    colorSuave: 'FFF7DCE4',
+    icono: 'ship'
+  },
+  Compactos: {
+    letra: 'C',
+    color: 'FF2563EB',
+    fondo: 'FFE8EFFF',
+    colorSuave: 'FFDCE6FF',
+    icono: 'car'
+  },
+  NP300: {
+    letra: 'D',
+    color: 'FFB45309',
+    fondo: 'FFFFF1E0',
+    colorSuave: 'FFFBE3C5',
+    icono: 'truck'
+  },
+  Subcompactos: {
+    letra: 'S',
+    color: 'FF0F7B53',
+    fondo: 'FFE7F6EE',
+    colorSuave: 'FFD2EEDF',
+    icono: 'small-car'
+  },
+  'Sin clasificar': {
+    letra: '?',
+    color: 'FF687182',
+    fondo: 'FFF3F4F7',
+    colorSuave: 'FFE5E8ED',
+    icono: 'alert'
+  }
 };
 
-function prioridadDimension(dimension) {
-  if (dimension === 'tipo') return 0;
-  if (dimension === 'sucursal') return 1;
-  return 2;
-}
+const ORDEN_CATEGORIA = new Map(CATEGORIAS.map((label, indice) => [label, indice]));
 
-function puntuarDimension(textoNormalizado, dimension) {
-  const reglas = REGLAS_DIMENSION[dimension] || [];
-  let puntaje = 0;
-  let posicion = Infinity;
+const UBICACIONES_POR_CODIGO = Object.freeze({
+  300: 'UNIVERSIDAD',
+  287: 'MADERO',
+  298: 'PUERTO ESCONDIDO',
+  301: 'HUATULCO',
+  66: 'HUAJUAPAN'
+});
 
-  for (const [frase, puntos] of reglas) {
-    if (!contieneFrase(textoNormalizado, frase)) continue;
-    posicion = Math.min(posicion, textoNormalizado.indexOf(frase));
-    puntaje = Math.max(puntaje, puntos);
-  }
+const SECCIONES = Object.freeze({
+  APARTADO: { label: 'APARTADO', incluida: true },
+  DEMOSTRACION: { label: 'DEMOSTRACION', incluida: true },
+  PISO: { label: 'PISO', incluida: true },
+  GENERAL: { label: 'GENERAL', incluida: true },
+  'SEMI_NUEVOS GARANTIZADOS': { label: 'SEMI_NUEVOS GARANTIZADOS', incluida: false },
+  SEMINUEVOS: { label: 'SEMINUEVOS', incluida: false },
+  TLALIXTAC: { label: 'TLALIXTAC', incluida: false },
+  USADOS: { label: 'USADOS', incluida: false }
+});
 
-  return { puntaje, posicion };
-}
+const SECCIONES_INCLUIDAS = new Set(
+  Object.values(SECCIONES).filter((seccion) => seccion.incluida).map((seccion) => seccion.label)
+);
 
-function esEncabezadoSoloOrigen(textoNormalizado) {
-  if (!contieneFrase(textoNormalizado, 'origen')) return false;
+const ALIAS_SECCION = new Map([
+  ['apartado', 'APARTADO'],
+  ['demostracion', 'DEMOSTRACION'],
+  ['piso', 'PISO'],
+  ['general', 'GENERAL'],
+  ['semi nuevos garantizados', 'SEMI_NUEVOS GARANTIZADOS'],
+  ['semi nuevo garantizado', 'SEMI_NUEVOS GARANTIZADOS'],
+  ['seminuevos', 'SEMINUEVOS'],
+  ['seminuevo', 'SEMINUEVOS'],
+  ['semi nuevos', 'SEMINUEVOS'],
+  ['semi nuevo', 'SEMINUEVOS'],
+  ['tlalixtac', 'TLALIXTAC'],
+  ['usados', 'USADOS'],
+  ['usado', 'USADOS']
+]);
 
-  const palabrasEspecificas = [
-    'tipo', 'clasificacion', 'categoria', 'nacional', 'importado',
-    'internacional', 'extranjero', 'sucursal', 'agencia', 'concesionario',
-    'distribuidor', 'procedencia', 'ciudad', 'localidad', 'municipio',
-    'poblacion', 'pais'
-  ];
+const MODELOS = [
+  { modelo: 'NP300', regex: /(^|\s)np\s*3\s*[0o]\s*[0o](\s|$)/ },
+  { modelo: 'X-TRAIL', regex: /(^|\s)x\s*-?\s*trail(\s|$)/ },
+  { modelo: 'V-DRIVE', regex: /(^|\s)v\s*-?\s*drive(\s|$)/ },
+  { modelo: 'MAGNITE', regex: /(^|\s)magnite(\s|$)/ },
+  { modelo: 'FRONTIER', regex: /(^|\s)frontier(\s|$)/ },
+  { modelo: 'KICKS', regex: /(^|\s)kicks(\s|$)/ },
+  { modelo: 'VERSA', regex: /(^|\s)versa(\s|$)/ },
+  { modelo: 'SENTRA', regex: /(^|\s)sentra(\s|$)/ },
+  { modelo: 'MARCH', regex: /(^|\s)march(\s|$)/ },
+  { modelo: 'KAIT', regex: /(^|\s)kait(\s|$)/ },
+  { modelo: 'URVAN', regex: /(^|\s)urvan(\s|$)/ },
+  { modelo: 'PATHFINDER', regex: /(^|\s)pathfinder(\s|$)/ },
+  { modelo: 'TIIDA', regex: /(^|\s)tiida(\s|$)/ },
+  { modelo: 'NOTE', regex: /(^|\s)note(\s|$)/ },
+  { modelo: 'MICRA', regex: /(^|\s)micra(\s|$)/ },
+  { modelo: 'Z', regex: /(^|\s)z(\s|$)/ }
+];
 
-  return !palabrasEspecificas.some((palabra) => contieneFrase(textoNormalizado, palabra));
-}
+const MODELOS_IMPORTADOS = new Set([
+  'MAGNITE',
+  'X-TRAIL',
+  'KAIT',
+  'URVAN',
+  'PATHFINDER',
+  'Z'
+]);
 
-function valoresParecenNacionalidad(filasDatos, indiceColumna) {
-  const valores = [];
+const MODELOS_COMPACTOS = new Set([
+  'VERSA',
+  'SENTRA',
+  'V-DRIVE',
+  'TIIDA',
+  'NOTE'
+]);
 
-  for (const fila of filasDatos) {
-    const valor = normalizarTexto(Array.isArray(fila) ? fila[indiceColumna] : '');
-    if (valor) valores.push(valor);
-    if (valores.length >= 40) break;
-  }
-
-  if (!valores.length) return false;
-
-  let coincidencias = 0;
-  for (const valor of valores) {
-    const tokens = valor.split(' ').filter(Boolean);
-    if (PISTAS_NACIONALIDAD.has(valor) || tokens.some((token) => PISTAS_NACIONALIDAD.has(token))) {
-      coincidencias += 1;
-    }
-  }
-
-  return coincidencias / valores.length >= 0.6;
-}
-
-function detectarDimensiones(encabezados, filasDatos) {
-  const candidatos = { tipo: [], sucursal: [], procedencia: [] };
-  const notas = [];
-  const conflictos = [];
-
-  for (const encabezado of encabezados) {
-    if (encabezado.generada) continue;
-
-    const texto = normalizarTexto(encabezado.labelBase);
-    if (!texto) continue;
-
-    let seleccion;
-
-    if (esEncabezadoSoloOrigen(texto)) {
-      const nacionalidad = valoresParecenNacionalidad(filasDatos, encabezado.index);
-      seleccion = nacionalidad
-        ? { dimension: 'tipo', puntaje: 75, posicion: 0 }
-        : { dimension: 'procedencia', puntaje: 65, posicion: 0 };
-      notas.push(
-        `La columna «${encabezado.label}» se interpretó como ${seleccion.dimension === 'tipo' ? 'tipo de vehículo' : 'procedencia'} según sus valores.`
-      );
-    } else {
-      const evaluaciones = Object.keys(REGLAS_DIMENSION).map((dimension) => ({
-        dimension,
-        ...puntuarDimension(texto, dimension)
-      }));
-
-      evaluaciones.sort((a, b) => {
-        if (a.posicion !== b.posicion) return a.posicion - b.posicion;
-        if (a.puntaje !== b.puntaje) return b.puntaje - a.puntaje;
-        return prioridadDimension(a.dimension) - prioridadDimension(b.dimension);
-      });
-
-      seleccion = evaluaciones[0];
-    }
-
-    if (!seleccion || seleccion.puntaje <= 0) continue;
-    candidatos[seleccion.dimension].push({ encabezado, ...seleccion });
-  }
-
-  const resultado = {
-    tipo: null,
-    sucursal: null,
-    procedencia: null,
-    notas,
-    conflictos
-  };
-
-  for (const dimension of ['tipo', 'sucursal', 'procedencia']) {
-    const lista = candidatos[dimension].sort((a, b) => {
-      if (b.puntaje !== a.puntaje) return b.puntaje - a.puntaje;
-      if (a.posicion !== b.posicion) return a.posicion - b.posicion;
-      return a.encabezado.index - b.encabezado.index;
-    });
-
-    if (!lista.length) continue;
-    resultado[dimension] = lista[0].encabezado;
-
-    if (lista.length > 1) {
-      const alternativas = lista.slice(1).map((item) => `«${item.encabezado.label}»`).join(', ');
-      conflictos.push(
-        `Varias columnas podrían ser ${dimension}: se usó «${lista[0].encabezado.label}» y se dejaron como datos originales ${alternativas}.`
-      );
-    }
-  }
-
-  return resultado;
-}
-
-function crearRevision(dimensiones, tipo, sucursal, procedencia, fila, cantidadDatos) {
-  const revision = [];
-  const sinTipo = !dimensiones.tipo || !tipo;
-  const sinSucursal = !dimensiones.sucursal || !sucursal;
-  const sinProcedencia = !dimensiones.procedencia || !procedencia;
-
-  if (sinTipo && sinSucursal && sinProcedencia) {
-    revision.push('Sin clasificación');
-  } else {
-    if (sinTipo) revision.push('Sin tipo');
-    if (sinSucursal) revision.push('Sin sucursal');
-    if (sinProcedencia) revision.push('Sin procedencia');
-  }
-
-  if (cantidadDatos <= 1) {
-    revision.push('Fila con un solo dato (posible título o registro incompleto)');
-  }
-
-  const pistasFila = fila.reduce((total, celda) => total + contarPistasEncabezado(celda), 0);
-  if (pistasFila >= 4 && cantidadDatos >= 3) {
-    revision.push('Posible encabezado repetido');
-  }
-
-  return revision;
-}
+const MODELOS_SUBCOMPACTOS = new Set([
+  'MARCH',
+  'MICRA'
+]);
 
 function pareceNP300(valor) {
   const texto = normalizarTexto(valor);
   if (!texto) return false;
-
   return /(^|\s)np\s*3\s*[0o]\s*[0o](\s|$)/.test(texto);
 }
 
-function categoriaPorTexto(valor) {
+function detectarModelo(valor) {
   const texto = normalizarTexto(valor);
-  if (!texto) return null;
+  if (!texto) return '';
 
-  if (texto.includes('internacional')) return 'Internacionales';
-  if (
-    texto.includes('importado')
-    || texto.includes('importacion')
-    || texto.includes('extranjero')
-  ) {
-    return 'Importados';
-  }
-  if (
-    texto.includes('nacional')
-    || texto.includes('nacionalizado')
-    || texto.includes('local')
-  ) {
-    return 'Nacionales';
+  for (const regla of MODELOS) {
+    if (regla.regex.test(texto)) return regla.modelo;
   }
 
-  return null;
+  return '';
 }
 
-function clasificarCategoria(tipo, valores, pista) {
-  const textos = [tipo, pista, ...(Array.isArray(valores) ? valores : [])];
+function clasificarVehiculo(valor) {
+  const texto = normalizarTexto(valor);
+  const modelo = detectarModelo(texto);
+  let categoria = 'Sin clasificar';
 
-  if (textos.some(pareceNP300)) return 'NP300';
+  if (pareceNP300(texto)) {
+    categoria = 'NP300';
+  } else if (modelo === 'FRONTIER') {
+    // Las Frontier V6, PRO-4X (V6), PRO HÍBRIDO y PLUG-IN son importadas.
+    // Las Frontier regulares (4 cilindros) se consideran NP300.
+    categoria = /(^|\s)v6(\s|$)|pro\s*hibrido|plug\s*in|e\s*power|e\s*rev/.test(texto)
+      ? 'Importados'
+      : 'NP300';
+  } else if (modelo === 'KICKS') {
+    // Kicks Play e-Power es importado; el Kicks regular es compacto.
+    categoria = /play|e\s*power|e\s*rev|(^|\s)power(\s|$)/.test(texto)
+      ? 'Importados'
+      : 'Compactos';
+  } else if (MODELOS_IMPORTADOS.has(modelo)) {
+    categoria = 'Importados';
+  } else if (MODELOS_COMPACTOS.has(modelo)) {
+    categoria = 'Compactos';
+  } else if (MODELOS_SUBCOMPACTOS.has(modelo)) {
+    categoria = 'Subcompactos';
+  }
 
-  return categoriaPorTexto(tipo) || categoriaPorTexto(pista) || 'Sin clasificar';
+  return {
+    modelo: modelo || 'SIN MODELO',
+    categoria,
+    clasificacion: CATEGORIA_DETALLE[categoria].letra
+  };
+}
+
+function extraerCodigoDealer(dealer) {
+  const coincidencia = String(dealer ?? '').match(/\d+/);
+  return coincidencia ? coincidencia[0] : '';
+}
+
+function mapearUbicacion(dealer, sucursal) {
+  const textoDealer = normalizarTexto(dealer);
+  const codigo = extraerCodigoDealer(dealer);
+
+  if (codigo === '300' && /flotil|flotilla|flo\s*300|(^|\s)flot(\s|$)/.test(textoDealer)) {
+    return 'FLOTILLA';
+  }
+
+  return UBICACIONES_POR_CODIGO[codigo] || aTexto(sucursal) || 'SIN UBICACIÓN';
+}
+
+function detectarSeccion(celdas) {
+  if (!Array.isArray(celdas)) return null;
+
+  // En la LISTA DE EXISTENCIAS los marcadores de sección viven en la
+  // columna D. No se revisan las demás columnas para no confundir una
+  // sucursal llamada «TLALIXTAC» con un cambio de sección.
+  const texto = normalizarTexto(celdas[3]);
+  if (!texto) return null;
+
+  const seccion = ALIAS_SECCION.get(texto);
+  return seccion ? SECCIONES[seccion] : null;
 }
 
 module.exports = {
   CATEGORIAS,
-  detectarDimensiones,
-  crearRevision,
-  clasificarCategoria
+  CATEGORIA_DETALLE,
+  ORDEN_CATEGORIA,
+  UBICACIONES_POR_CODIGO,
+  SECCIONES,
+  SECCIONES_INCLUIDAS,
+  pareceNP300,
+  detectarModelo,
+  clasificarVehiculo,
+  extraerCodigoDealer,
+  mapearUbicacion,
+  detectarSeccion
 };

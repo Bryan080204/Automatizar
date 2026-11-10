@@ -17,6 +17,10 @@ const elementos = {
   categoriesMeta: document.getElementById('categoriesMeta'),
   categoriesTotal: document.getElementById('categoriesTotal'),
   categoryBars: document.getElementById('categoryBars'),
+  locationsMeta: document.getElementById('locationsMeta'),
+  locationsTotal: document.getElementById('locationsTotal'),
+  locationsHead: document.getElementById('locationsHead'),
+  locationsBody: document.getElementById('locationsBody'),
   sheetsProcessed: document.getElementById('sheetsProcessed'),
   detectionList: document.getElementById('detectionList'),
   previewHead: document.getElementById('previewHead'),
@@ -32,19 +36,21 @@ const elementos = {
   toast: document.getElementById('toast')
 };
 
+const CATEGORIAS = ['Importados', 'Compactos', 'NP300', 'Subcompactos'];
+
 const CATEGORIAS_INFO = {
-  Nacionales: { clase: 'nacionales', color: '#0f7b53', icono: 'car' },
-  Importados: { clase: 'importados', color: '#c3002f', icono: 'ship' },
-  Internacionales: { clase: 'internacionales', color: '#2563eb', icono: 'globe' },
-  NP300: { clase: 'np300', color: '#b45309', icono: 'truck' },
-  'Sin clasificar': { clase: 'sin-clasificar', color: '#687182', icono: 'alert' }
+  Importados: { clase: 'importados', color: '#c3002f', icono: 'ship', letra: 'I' },
+  Compactos: { clase: 'compactos', color: '#2563eb', icono: 'car', letra: 'C' },
+  NP300: { clase: 'np300', color: '#b45309', icono: 'truck', letra: 'D' },
+  Subcompactos: { clase: 'subcompactos', color: '#0f7b53', icono: 'small-car', letra: 'S' },
+  'Sin clasificar': { clase: 'sin-clasificar', color: '#687182', icono: 'alert', letra: '?' }
 };
 
 const PASOS = [
   'Leyendo el archivo origen...',
-  'Detectando encabezados y columnas...',
-  'Clasificando en Nacionales, Importados, Internacionales y NP300...',
-  'Generando el archivo resultado...'
+  'Ubicando encabezados y secciones...',
+  'Limpiando seminuevos y clasificando unidades...',
+  'Generando resumen, ubicaciones y hojas...'
 ];
 
 const LIMITE_BYTES = 20 * 1024 * 1024;
@@ -182,19 +188,23 @@ function renderizarResumen(resultado) {
   const resumen = resultado.resumen;
   const conteos = new Map((resumen.porCategoria || []).map((item) => [item.label, item.count]));
   const tarjetas = [
-    crearCeldaResumen('Registros', resumen.totalRegistros, {
+    crearCeldaResumen('Unidades incluidas', resumen.totalRegistros, {
       destacada: true,
       icono: 'clipboard'
     }),
-    ...['Nacionales', 'Importados', 'Internacionales', 'NP300'].map((categoria) => (
+    ...CATEGORIAS.map((categoria) => (
       crearCeldaResumen(categoria, conteos.get(categoria) || 0, { categoria })
-    ))
+    )),
+    crearCeldaResumen('Excluidas', resumen.totalExcluidos || 0, {
+      icono: 'alert'
+    })
   ];
 
-  tarjetas.push(crearCeldaResumen('Para revisión', resumen.paraRevision, {
-    destacada: resumen.paraRevision > 0,
-    icono: 'alert'
-  }));
+  if ((resumen.sinClasificar || 0) > 0) {
+    tarjetas.push(crearCeldaResumen('Sin clasificar', resumen.sinClasificar, {
+      categoria: 'Sin clasificar'
+    }));
+  }
 
   elementos.summaryGrid.replaceChildren(...tarjetas);
 }
@@ -202,14 +212,14 @@ function renderizarResumen(resultado) {
 function renderizarCategorias(resultado) {
   const resumen = resultado.resumen;
   const total = resumen.totalRegistros || 0;
+  const excluidos = resumen.totalExcluidos || 0;
   const conteos = new Map((resumen.porCategoria || []).map((item) => [item.label, item.count]));
-  const fijas = ['Nacionales', 'Importados', 'Internacionales', 'NP300'];
 
   elementos.categoryBars.replaceChildren();
-  elementos.categoriesMeta.textContent = `4 categorías fijas · ${total} registro(s) en total`;
-  elementos.categoriesTotal.textContent = `${total} registro(s)`;
+  elementos.categoriesMeta.textContent = `4 categorías · ${total} incluidas · ${excluidos} excluidas`;
+  elementos.categoriesTotal.textContent = `${total} unidades`;
 
-  for (const categoria of fijas) {
+  for (const categoria of CATEGORIAS) {
     const info = CATEGORIAS_INFO[categoria];
     const count = conteos.get(categoria) || 0;
     const porcentaje = total > 0 ? (count / total) * 100 : 0;
@@ -219,9 +229,15 @@ function renderizarCategorias(resultado) {
 
     const etiqueta = document.createElement('span');
     etiqueta.className = `category-badge is-${info.clase}`;
+
+    const clave = document.createElement('span');
+    clave.className = 'category-key';
+    clave.textContent = info.letra;
+
     etiqueta.append(
       crearIcono(info.icono, 'icon category-icon'),
-      document.createTextNode(categoria)
+      document.createTextNode(categoria),
+      clave
     );
 
     const medidor = document.createElement('div');
@@ -240,19 +256,137 @@ function renderizarCategorias(resultado) {
     elementos.categoryBars.appendChild(fila);
   }
 
+  const seccionesExcluidas = (resumen.secciones || [])
+    .filter((seccion) => !seccion.incluida && seccion.count > 0);
+
+  if (excluidos > 0) {
+    const nota = document.createElement('p');
+    nota.className = 'category-note';
+    nota.textContent = `Se excluyeron ${excluidos} unidad(es) de ${seccionesExcluidas
+      .map((seccion) => `${seccion.label} (${seccion.count})`)
+      .join(', ')}.`;
+    elementos.categoryBars.appendChild(nota);
+  }
+
   const sinClasificar = conteos.get('Sin clasificar') || 0;
   if (sinClasificar > 0) {
     const nota = document.createElement('p');
-    nota.className = 'category-note';
-    nota.textContent = `${sinClasificar} registro(s) sin clasificar. Se conservaron en la hoja «Sin clasificar» y en la hoja de revisión.`;
+    nota.className = 'category-note neutral';
+    nota.textContent = `${sinClasificar} unidad(es) no coinciden con el catálogo de modelos. Se conservaron en la hoja «SIN CLASIFICAR».`;
     elementos.categoryBars.appendChild(nota);
   }
 }
 
-function crearChipDeteccion(etiqueta, valor) {
+function renderizarUbicaciones(resultado) {
+  const resumen = resultado.resumen;
+  const ubicaciones = resumen.porUbicacion || [];
+  const total = resumen.totalRegistros || 0;
+
+  elementos.locationsHead.replaceChildren();
+  elementos.locationsBody.replaceChildren();
+
+  if (!ubicaciones.length) {
+    elementos.locationsMeta.textContent = 'Sin ubicaciones detectadas';
+    elementos.locationsTotal.textContent = '0 ubicaciones';
+    return;
+  }
+
+  const haySinClasificar = ubicaciones.some(
+    (item) => (item.categorias && item.categorias['Sin clasificar']) > 0
+  );
+  const categorias = [...CATEGORIAS, ...(haySinClasificar ? ['Sin clasificar'] : [])];
+  const columnas = ['Ubicación', 'Unidades', '% del total', ...categorias];
+
+  for (const columna of columnas) {
+    const th = document.createElement('th');
+    th.textContent = columna;
+    const info = CATEGORIAS_INFO[columna];
+
+    if (info) {
+      th.classList.add(`is-${info.clase}`);
+      th.style.setProperty('--category-color', info.color);
+    }
+
+    elementos.locationsHead.appendChild(th);
+  }
+
+  const totalesCategoria = new Map(categorias.map((categoria) => [categoria, 0]));
+
+  for (const ubicacion of ubicaciones) {
+    const fila = document.createElement('tr');
+    const porcentaje = total > 0 ? (ubicacion.count / total) * 100 : 0;
+
+    const celdaNombre = document.createElement('td');
+    const nombre = document.createElement('span');
+    nombre.className = 'location-name';
+    const marcador = document.createElement('span');
+    marcador.className = 'location-marker';
+    nombre.append(marcador, document.createTextNode(ubicacion.label));
+    celdaNombre.appendChild(nombre);
+    fila.appendChild(celdaNombre);
+
+    const celdaUnidades = document.createElement('td');
+    celdaUnidades.className = 'location-units';
+    celdaUnidades.textContent = String(ubicacion.count);
+    fila.appendChild(celdaUnidades);
+
+    const celdaPorcentaje = document.createElement('td');
+    celdaPorcentaje.className = 'location-share-value';
+    celdaPorcentaje.textContent = `${porcentaje.toFixed(1)}%`;
+    fila.appendChild(celdaPorcentaje);
+
+    for (const categoria of categorias) {
+      const count = (ubicacion.categorias && ubicacion.categorias[categoria]) || 0;
+      totalesCategoria.set(categoria, (totalesCategoria.get(categoria) || 0) + count);
+
+      const celda = document.createElement('td');
+      celda.className = 'location-category';
+      const info = CATEGORIAS_INFO[categoria] || CATEGORIAS_INFO['Sin clasificar'];
+      const punto = document.createElement('span');
+      punto.className = `location-dot is-${info.clase}`;
+      const valor = document.createElement('span');
+      valor.textContent = String(count);
+      celda.append(punto, valor);
+      fila.appendChild(celda);
+    }
+
+    elementos.locationsBody.appendChild(fila);
+  }
+
+  const filaTotal = document.createElement('tr');
+  filaTotal.className = 'total-row';
+
+  const totalNombre = document.createElement('td');
+  totalNombre.textContent = 'TOTAL GLOBAL';
+  filaTotal.appendChild(totalNombre);
+
+  const totalUnidades = document.createElement('td');
+  totalUnidades.textContent = String(total);
+  filaTotal.appendChild(totalUnidades);
+
+  const totalPorcentaje = document.createElement('td');
+  totalPorcentaje.className = 'location-share-value';
+  totalPorcentaje.textContent = '100.0%';
+  filaTotal.appendChild(totalPorcentaje);
+
+  for (const categoria of categorias) {
+    const celda = document.createElement('td');
+    celda.className = 'location-category';
+    celda.textContent = String(totalesCategoria.get(categoria) || 0);
+    filaTotal.appendChild(celda);
+  }
+
+  elementos.locationsBody.appendChild(filaTotal);
+
+  elementos.locationsMeta.textContent =
+    `${ubicaciones.length} ubicaciones de origen · ${total} unidades · mezcla por categoría`;
+  elementos.locationsTotal.textContent = `${ubicaciones.length} ubicaciones`;
+}
+
+function crearChipDeteccion(texto, clase = '') {
   const chip = document.createElement('span');
-  chip.className = `detect-chip${valor ? '' : ' missing'}`;
-  chip.textContent = valor ? `${etiqueta}: ${valor}` : `${etiqueta}: no detectada`;
+  chip.className = `detect-chip${clase ? ` ${clase}` : ''}`;
+  chip.textContent = texto;
   return chip;
 }
 
@@ -272,21 +406,28 @@ function renderizarDeteccion(resultado) {
 
     contenedor.appendChild(nombre);
 
-    if (hoja.vacia) {
-      const chip = document.createElement('span');
-      chip.className = 'detect-chip missing';
-      chip.textContent = 'Hoja vacía';
-      contenedor.appendChild(chip);
+    if (!hoja.valida) {
+      contenedor.appendChild(crearChipDeteccion('Hoja omitida', 'missing'));
+      if (hoja.motivo) contenedor.appendChild(crearChipDeteccion(hoja.motivo, 'missing'));
     } else {
-      contenedor.append(
-        crearChipDeteccion('Tipo', hoja.tipo),
-        crearChipDeteccion('Sucursal', hoja.sucursal),
-        crearChipDeteccion('Procedencia', hoja.procedencia)
-      );
+      if (hoja.encabezadoFila) {
+        contenedor.appendChild(crearChipDeteccion(`Encabezado: fila ${hoja.encabezadoFila}`));
+      }
+
+      for (const seccion of hoja.secciones || []) {
+        contenedor.appendChild(
+          crearChipDeteccion(
+            `${seccion.label}: ${seccion.count}`,
+            seccion.incluida ? 'included' : 'excluded'
+          )
+        );
+      }
     }
 
     const registros = document.createElement('small');
-    registros.textContent = `${hoja.registros} registro(s)`;
+    registros.textContent = hoja.valida
+      ? `${hoja.registros} incluidas · ${hoja.excluidos} excluidas`
+      : 'Sin datos para el reporte';
     contenedor.appendChild(registros);
 
     elementos.detectionList.appendChild(contenedor);
@@ -304,13 +445,12 @@ function renderizarTabla(resultado) {
   elementos.previewHead.replaceChildren();
   elementos.previewBody.replaceChildren();
 
-  const indiceRevision = resultado.indiceRevision;
   const indiceCategoria = Number.isInteger(resultado.indiceCategoria) ? resultado.indiceCategoria : -1;
-  const inicioDerivadas = resultado.inicioDerivadas ?? indiceRevision - 5;
+  const indiceClasificacion = Number.isInteger(resultado.indiceClasificacion) ? resultado.indiceClasificacion : -1;
+  const indiceDias = resultado.columnas.findIndex((columna) => columna === 'Días');
   const indices = resultado.columnas.map((columna, indice) => indice);
-  const indicesMostrados = indiceCategoria >= 0
-    ? [indiceCategoria, ...indices.filter((indice) => indice !== indiceCategoria)]
-    : indices;
+  const preferidos = [indiceCategoria, indiceClasificacion, indiceDias].filter((indice) => indice >= 0);
+  const indicesMostrados = [...new Set([...preferidos, ...indices])];
 
   for (const indice of indicesMostrados) {
     elementos.previewHead.appendChild(crearEncabezadoTabla(resultado.columnas[indice]));
@@ -318,38 +458,42 @@ function renderizarTabla(resultado) {
 
   for (const fila of resultado.filas) {
     const tr = document.createElement('tr');
+    const textoCategoria = indiceCategoria >= 0 ? String(fila[indiceCategoria] ?? '') : '';
+    const infoCategoria = CATEGORIAS_INFO[textoCategoria] || CATEGORIAS_INFO['Sin clasificar'];
 
     indicesMostrados.forEach((indice) => {
       const valor = fila[indice];
       const celda = document.createElement('td');
       const texto = valor === null || valor === undefined ? '' : String(valor);
-      const esDerivada = indice >= inicioDerivadas && indice <= indiceRevision;
-
-      if (esDerivada) celda.classList.add('is-derived');
 
       if (texto === '') {
         celda.textContent = '—';
         celda.classList.add('is-empty');
       } else if (indice === indiceCategoria) {
-        const info = CATEGORIAS_INFO[texto] || CATEGORIAS_INFO['Sin clasificar'];
         const etiqueta = document.createElement('span');
-        etiqueta.className = `category-badge table-badge is-${info.clase}`;
+        etiqueta.className = `category-badge table-badge is-${infoCategoria.clase}`;
         etiqueta.append(
-          crearIcono(info.icono, 'icon table-badge-icon'),
+          crearIcono(infoCategoria.icono, 'icon table-badge-icon'),
           document.createTextNode(texto)
         );
-        celda.classList.add('is-category', `is-${info.clase}`);
+        celda.classList.add('is-category', `is-${infoCategoria.clase}`);
         celda.appendChild(etiqueta);
-      } else if (indice === indiceRevision) {
-        const etiqueta = document.createElement('span');
-        etiqueta.className = 'revision-tag';
-        etiqueta.append(
-          crearIcono('alert', 'icon revision-icon'),
-          document.createTextNode('Revisar')
-        );
-        celda.classList.add('is-revision');
-        celda.title = texto;
-        celda.appendChild(etiqueta);
+      } else if (indice === indiceClasificacion) {
+        const clave = document.createElement('span');
+        clave.className = 'table-key';
+        clave.textContent = texto;
+        celda.classList.add('is-key', `is-${infoCategoria.clase}`);
+        celda.title = `${texto} · ${textoCategoria}`;
+        celda.appendChild(clave);
+      } else if (indice === indiceDias) {
+        const dias = Number(texto);
+        celda.textContent = texto;
+        celda.classList.add('is-days');
+        if (Number.isFinite(dias) && dias >= 365) {
+          celda.classList.add('is-old');
+        } else if (Number.isFinite(dias) && dias >= 180) {
+          celda.classList.add('is-aged');
+        }
       } else {
         celda.textContent = texto;
         if (texto.length > 32) celda.title = texto;
@@ -363,11 +507,13 @@ function renderizarTabla(resultado) {
 
   const total = resultado.totalRegistros;
   const mostrados = resultado.filasMostradas;
+  const ubicaciones = (resultado.resumen.porUbicacion || []).length;
 
-  elementos.previewMeta.textContent = `${total} registro(s) · 4 categorías · ${resultado.fechaGeneracion}`;
+  elementos.previewMeta.textContent =
+    `${total} unidades · 4 categorías · ${ubicaciones} ubicaciones · ordenado por Días`;
   elementos.previewNote.textContent = mostrados < total
-    ? `Mostrando ${mostrados} de ${total} registros. El archivo resultado contiene todos los registros y sus 4 categorías.`
-    : `Vista previa completa. El archivo resultado incluye las 4 categorías, el inventario completo y la hoja de revisión.`;
+    ? `Mostrando ${mostrados} de ${total} unidades. El archivo resultado contiene la lista completa y las hojas por categoría.`
+    : 'Vista previa completa. El archivo resultado incluye resumen ejecutivo, lista completa, hojas por categoría y hojas por ubicación de origen.';
 }
 
 function renderizarNotas(resultado) {
@@ -393,22 +539,24 @@ function renderizarResultado(resultado) {
 
   renderizarResumen(resultado);
   renderizarCategorias(resultado);
+  renderizarUbicaciones(resultado);
   renderizarDeteccion(resultado);
   renderizarTabla(resultado);
   renderizarNotas(resultado);
 
   const conteos = new Map((resultado.resumen.porCategoria || []).map((item) => [item.label, item.count]));
-  const categoriasConRegistros = ['Nacionales', 'Importados', 'Internacionales', 'NP300']
+  const categoriasConRegistros = CATEGORIAS
     .filter((categoria) => (conteos.get(categoria) || 0) > 0).length;
+  const ubicaciones = (resultado.resumen.porUbicacion || []).length;
   const peso = formatearPeso(resultado.pesoSalida || 0);
 
   elementos.downloadBtn.href = `/api/descargar/${resultado.token}`;
   elementos.downloadBtn.setAttribute('download', resultado.nombreSalida);
   elementos.downloadFileName.textContent = resultado.nombreSalida;
   elementos.downloadFileMeta.textContent =
-    `Excel · ${peso} · ${categoriasConRegistros} de 4 categoría(s) con registros`;
+    `Excel · ${peso} · ${categoriasConRegistros} de 4 categorías · ${ubicaciones} ubicaciones`;
   elementos.downloadDescription.textContent =
-    'El archivo incluye las 4 categorías, el inventario completo y la hoja de revisión. El original permanece intacto.';
+    'Incluye resumen ejecutivo, distribución por ubicación, lista completa ordenada por antigüedad, hojas por categoría y hojas por ubicación de origen. El original permanece intacto.';
 }
 
 async function procesarArchivo() {

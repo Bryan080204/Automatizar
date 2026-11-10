@@ -91,6 +91,13 @@
         <circle cx="7.5" cy="15" r="1"/>
         <circle cx="16.5" cy="15" r="1"/>
       </symbol>
+      <symbol id="i-small-car" viewBox="0 0 24 24">
+        <path d="M5 17h14M6 17v2M18 17v2"/>
+        <path d="M3 13h18v4H3z"/>
+        <path d="m6 13 1.5-4A2 2 0 0 1 9.4 7.6h5.2a2 2 0 0 1 1.9 1.4L18 13"/>
+        <circle cx="8" cy="15" r="1"/>
+        <circle cx="16" cy="15" r="1"/>
+      </symbol>
       <symbol id="i-ship" viewBox="0 0 24 24">
         <path d="M4 17h16l-2 3H6l-2-3Z"/>
         <path d="M6 17V9l6-4 6 4v8"/>
@@ -144,22 +151,22 @@
           </span>
           <h1>Un archivo origen. <span>Cuatro categorías</span> listas.</h1>
           <p>
-            Sube tu Excel y obtén un archivo resultado con el inventario separado en
-            Nacionales, Importados, Internacionales y NP300, además de resumen y alertas.
-            Tus datos originales no se modifican.
+            Sube tu Excel y obtén un archivo resultado con las secciones APARTADO, DEMOSTRACIÓN
+            y PISO, separadas por categoría y ubicación de origen. Se excluyen seminuevos, usados
+            y Tlalixtac; el inventario se ordena por antigüedad. Tus datos originales no se modifican.
           </p>
           <div class="hero-tags">
-            <span class="tag-nacionales">
-              <svg class="icon" aria-hidden="true"><use href="#i-car"></use></svg>Nacionales
-            </span>
             <span class="tag-importados">
               <svg class="icon" aria-hidden="true"><use href="#i-ship"></use></svg>Importados
             </span>
-            <span class="tag-internacionales">
-              <svg class="icon" aria-hidden="true"><use href="#i-globe"></use></svg>Internacionales
+            <span class="tag-compactos">
+              <svg class="icon" aria-hidden="true"><use href="#i-car"></use></svg>Compactos
             </span>
             <span class="tag-np300">
               <svg class="icon" aria-hidden="true"><use href="#i-truck"></use></svg>NP300
+            </span>
+            <span class="tag-subcompactos">
+              <svg class="icon" aria-hidden="true"><use href="#i-small-car"></use></svg>Subcompactos
             </span>
           </div>
         </div>
@@ -266,8 +273,8 @@
                 <b>02</b>
               </span>
               <div>
-                <strong>Clasificación en 4 categorías</strong>
-                <p>Nacionales, Importados, Internacionales y NP300, sin depender de nombres fijos.</p>
+                <strong>Limpieza y clasificación en 4 categorías</strong>
+                <p>Se conservan APARTADO, DEMOSTRACIÓN y PISO; se eliminan seminuevos, usados y Tlalixtac.</p>
               </div>
             </li>
             <li>
@@ -277,13 +284,13 @@
               </span>
               <div>
                 <strong>Descarga tu archivo resultado</strong>
-                <p>Un Excel nuevo con las 4 categorías, resumen y alertas de revisión.</p>
+                <p>Un Excel nuevo con resumen ejecutivo, distribución por ubicación y hojas por categoría.</p>
               </div>
             </li>
           </ol>
           <div class="guide-note">
-            No se eliminan filas ni columnas. Los datos que no se puedan clasificar se conservan
-            y se marcan para revisión.
+            Las secciones de seminuevos, usados y Tlalixtac se excluyen del reporte. Los modelos
+            que no coincidan con el catálogo se conservan en la hoja «SIN CLASIFICAR».
           </div>
         </aside>
       </section>
@@ -297,7 +304,7 @@
             <div>
               <span class="step-label">Paso 02 · Archivo resultado</span>
               <h2>Revisa y descarga</h2>
-              <p>Tu inventario quedó separado en Nacionales, Importados, Internacionales y NP300.</p>
+              <p>Tu inventario quedó separado por categoría y ubicación de origen.</p>
             </div>
           </div>
           <button class="button ghost" id="resetBtn" type="button">
@@ -324,6 +331,27 @@
           <div class="category-bars" id="categoryBars"></div>
         </div>
 
+        <div class="panel locations-panel">
+          <div class="panel-head compact">
+            <div class="panel-heading">
+              <span class="panel-icon small">
+                <svg class="icon" aria-hidden="true"><use href="#i-route"></use></svg>
+              </span>
+              <div>
+                <h3>Distribución por ubicación</h3>
+                <span id="locationsMeta">Unidades por ubicación de origen y mezcla por categoría</span>
+              </div>
+            </div>
+            <span class="categories-total" id="locationsTotal"></span>
+          </div>
+          <div class="locations-table-wrap">
+            <table class="locations-table">
+              <thead><tr id="locationsHead"></tr></thead>
+              <tbody id="locationsBody"></tbody>
+            </table>
+          </div>
+        </div>
+
         <div class="panel detection-panel">
           <div class="panel-head compact">
             <div class="panel-heading">
@@ -331,7 +359,7 @@
                 <svg class="icon" aria-hidden="true"><use href="#i-grid"></use></svg>
               </span>
               <div>
-                <h3>Hojas y columnas detectadas</h3>
+                <h3>Hojas y secciones detectadas</h3>
                 <span id="sheetsProcessed"></span>
               </div>
             </div>
@@ -350,7 +378,12 @@
                 <span id="previewMeta"></span>
               </div>
             </div>
-            <span class="revision-legend"><span></span>Requiere revisión</span>
+            <div class="classification-legend" aria-label="Claves de clasificación">
+              <span class="is-importados"><b>I</b>Importado</span>
+              <span class="is-compactos"><b>C</b>Compacto</span>
+              <span class="is-np300"><b>D</b>NP300</span>
+              <span class="is-subcompactos"><b>S</b>Subcompacto</span>
+            </div>
           </div>
           <div class="table-scroll">
             <table class="preview-table">
@@ -382,7 +415,7 @@
                 <h3>Tu archivo resultado está listo</h3>
               </div>
             </div>
-            <p id="downloadDescription">Descarga el Excel nuevo con las 4 categorías. El archivo original permanece intacto.</p>
+            <p id="downloadDescription">Descarga el Excel nuevo con resumen ejecutivo, distribución por ubicación, lista completa y las 4 categorías. El archivo original permanece intacto.</p>
             <div class="download-file">
               <div class="file-icon file-icon-light">
                 <svg class="icon" aria-hidden="true"><use href="#i-file-sheet"></use></svg>
@@ -410,7 +443,7 @@
     <footer class="site-footer">
       <span>Organizador de Inventarios Nissan</span>
       <span class="footer-separator">/</span>
-      <span>Nacionales · Importados · Internacionales · NP300</span>
+      <span>Importados · Compactos · NP300 · Subcompactos · Ubicaciones</span>
     </footer>
 
     <div class="credit">Juan Antonio // Bryan Santiago</div>
