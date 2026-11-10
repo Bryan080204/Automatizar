@@ -810,7 +810,7 @@ function crearHojaDatos(libro, nombreHoja, registros, opciones) {
       }
 
       if (columna.key === 'observaciones') {
-        colorTexto = PALETA.gris;
+        colorTexto = PALETA.rojo;
       }
 
       celda.font = {
